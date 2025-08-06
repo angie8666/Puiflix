@@ -1,0 +1,37 @@
+# === Python ===
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.sqlite3
+*.log
+
+# Virtual environment
+venv/
+.env
+
+# Metadata and posters
+backend/metadata.json
+backend/posters/
+backend/movies/
+
+# === Node (React frontend) ===
+frontend/node_modules/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+frontend/.env.test
+frontend/npm-debug.log
+frontend/yarn-error.log
+
+# === VS Code ===
+.vscode/
+
+# === macOS & Windows ===
+.DS_Store
+Thumbs.db
+
+# === Logs ===
+*.log
