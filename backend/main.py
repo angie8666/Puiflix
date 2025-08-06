@@ -24,7 +24,7 @@ POSTERS_DIR = "posters"
 METADATA_FILE = "metadata.json"
 
 tmdb = TMDb()
-tmdb.api_key = "YOUR_TMDB_API_KEY"  # <-- Replace with your TMDb API key
+tmdb.api_key = "df66fbf62cb100b4898a31454454a8b1"  # <-- Replace with your TMDb API key
 tmdb.language = "en"
 movie_api = Movie()
 
