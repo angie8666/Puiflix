@@ -14,6 +14,7 @@ venv/
 backend/metadata.json
 backend/posters/
 backend/movies/
+backend/.env
 
 # === Node (React frontend) ===
 frontend/node_modules/

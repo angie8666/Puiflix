@@ -8,6 +8,9 @@ import re
 from tmdbv3api import TMDb, Movie
 
 from utils import extract_media_info, download_poster
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -24,7 +27,7 @@ POSTERS_DIR = "posters"
 METADATA_FILE = "metadata.json"
 
 tmdb = TMDb()
-tmdb.api_key = "df66fbf62cb100b4898a31454454a8b1"  # <-- Replace with your TMDb API key
+tmdb.api_key = os.getenv("TMDB_API_KEY")
 tmdb.language = "en"
 movie_api = Movie()
 
