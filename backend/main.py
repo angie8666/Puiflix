@@ -5,48 +5,56 @@ from fastapi.responses import StreamingResponse, JSONResponse
 import os
 import json
 import re
+import requests
+
 from tmdbv3api import TMDb, Movie
+from utils import extract_media_info
 
-from utils import extract_media_info, download_poster
-from dotenv import load_dotenv
-
-load_dotenv()
+# Subtitles library
+from subliminal import download_best_subtitles, region, save_subtitles, Video
+from babelfish import Language
 
 app = FastAPI()
 
-# CORS settings to allow frontend access
+# CORS settings
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Change to your frontend URL in production
+    allow_origins=["*"],  # update for production
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Paths
 MOVIES_DIR = "movies"
 POSTERS_DIR = "posters"
+SUBS_DIR = "subtitles"
 METADATA_FILE = "metadata.json"
 
+# Ensure dirs exist
+os.makedirs(POSTERS_DIR, exist_ok=True)
+os.makedirs(SUBS_DIR, exist_ok=True)
+
+# TMDb setup
 tmdb = TMDb()
-tmdb.api_key = os.getenv("TMDB_API_KEY")
+tmdb.api_key = os.getenv("TMDB_API_KEY", "YOUR_TMDB_API_KEY")
 tmdb.language = "en"
 movie_api = Movie()
 
-os.makedirs(POSTERS_DIR, exist_ok=True)
-app.mount("/posters", StaticFiles(directory=POSTERS_DIR), name="posters")
+# Subliminal cache
+region.configure('dogpile.cache.memory')
 
-def extract_title_year(filename):
+# Mount static serving
+app.mount("/posters", StaticFiles(directory=POSTERS_DIR), name="posters")
+app.mount("/subtitles", StaticFiles(directory=SUBS_DIR), name="subtitles")
+
+def extract_title_year(filename: str):
     name, _ = os.path.splitext(filename)
     match = re.match(r"(.+?)\s*\(?(\d{4})?\)?$", name)
     if match:
         title = match.group(1).replace('.', ' ').strip()
         year = match.group(2)
-        if year:
-            year = int(year)
-        else:
-            year = None
-        return title, year
-    else:
-        return name, None
+        return title, int(year) if year else None
+    return name, None
 
 def search_movie_on_tmdb(title, year=None):
     results = movie_api.search(title)
@@ -56,6 +64,31 @@ def search_movie_on_tmdb(title, year=None):
                 return result
         else:
             return result
+    return None
+
+def download_poster(url, path):
+    try:
+        r = requests.get(url, timeout=10)
+        if r.status_code == 200:
+            with open(path, "wb") as f:
+                f.write(r.content)
+            return True
+    except Exception as e:
+        print(f"Poster download failed: {e}")
+    return False
+
+def download_subtitle(filepath, title):
+    """Try to download English subtitles using subliminal"""
+    try:
+        video = Video.fromname(filepath)
+        subtitles = download_best_subtitles({video}, {Language('eng')})
+        if subtitles and video in subtitles and subtitles[video]:
+            sub_path = os.path.join(SUBS_DIR, f"{os.path.splitext(title)[0]}.srt")
+            save_subtitles(video, subtitles[video], directory=SUBS_DIR, single=True, overwrite=True)
+            if os.path.exists(sub_path):
+                return f"/subtitles/{os.path.basename(sub_path)}"
+    except Exception as e:
+        print(f"Subtitle download failed: {e}")
     return None
 
 def refresh_metadata():
@@ -79,7 +112,7 @@ def refresh_metadata():
             movie_title = title
             movie_year = year
 
-        # Download poster if not exists locally
+        # Poster
         poster_local_path = None
         if poster_url:
             ext = os.path.splitext(poster_url)[1]
@@ -89,11 +122,12 @@ def refresh_metadata():
                 success = download_poster(poster_url, poster_local_path)
                 if not success:
                     poster_local_path = None
-            else:
-                print(f"Poster already exists: {poster_local_path}")
 
-        # Extract video metadata
+        # Media info
         media_info = extract_media_info(filepath)
+
+        # Subtitles
+        subtitle_url = download_subtitle(filepath, movie_title)
 
         metadata.append({
             "filename": filename,
@@ -104,6 +138,7 @@ def refresh_metadata():
             "width": media_info.get("width"),
             "height": media_info.get("height"),
             "codec": media_info.get("codec"),
+            "subtitle": subtitle_url,
         })
 
     with open(METADATA_FILE, "w", encoding="utf-8") as f:
