@@ -35,3 +35,4 @@ htmlcov/
 
 # Movies
 backend/movies/
+backend/posters/
