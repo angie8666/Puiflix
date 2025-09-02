@@ -19,13 +19,11 @@ MOVIES_DIR.mkdir(exist_ok=True)
 POSTERS_DIR.mkdir(exist_ok=True)
 STATIC_DIR.mkdir(exist_ok=True)
 
-
 def sanitize_movie_name(filename: str) -> str:
     name = filename.rsplit(".", 1)[0]
     name = name.replace(".", " ").replace("_", " ")
     name = re.sub(r"\b(1080p|720p|x264|x265|BluRay|WEBRip|HDRip|BRRip)\b", "", name, flags=re.I)
     return name.strip()
-
 
 def fetch_poster(filename: str):
     query_name = sanitize_movie_name(filename)
@@ -56,12 +54,10 @@ def fetch_poster(filename: str):
         print("Poster fetch error:", e)
     return "/static/placeholder.jpg"
 
-
-def download_subtitles(file_path: Path, lang="en"):
+def download_subtitles(file_path: Path, lang="eng"):
     out_file = STATIC_DIR / f"{file_path.stem}_{lang}.srt"
     if out_file.exists():
         return out_file
-
     try:
         subliminal.region.configure('dogpile.cache.memory')
         video = subliminal.Video.fromname(str(file_path))
@@ -71,8 +67,7 @@ def download_subtitles(file_path: Path, lang="en"):
             return out_file
     except Exception as e:
         print(f"Subtitle download failed: {e}")
-    return None  # No dummy subtitles
-
+    return None
 
 def get_tracks(file_path: Path):
     audio, subtitles = [], []
@@ -98,16 +93,14 @@ def get_tracks(file_path: Path):
         audio.append({"index": 0, "codec": "unknown", "lang": "und"})
     return {"audio": audio, "subtitles": subtitles}
 
-
 def fetch_rating(filename: str):
-    """Fetch movie rating from TMDB"""
     query_name = sanitize_movie_name(filename)
     if not TMDB_API_KEY:
         return None
     try:
         url = "https://api.themoviedb.org/3/search/movie"
         params = {"api_key": TMDB_API_KEY, "query": query_name}
-        res = requests.get(url, params=params).json()
+        res = requests.get(url).json()
         if res.get("results"):
             return res["results"][0].get("vote_average")
     except:
