@@ -36,3 +36,6 @@ htmlcov/
 # Movies
 backend/movies/
 backend/posters/
+backend/static/
+
+frontend/node_modules/
