@@ -34,20 +34,25 @@ def list_movies():
     return {"movies": movies}
 
 # Stream movie with HTTP range support
+
 @app.get("/stream/{filename}")
-def stream_movie(request: Request, filename: str):
+def stream_movie(filename: str, request: Request):
     filepath = MOVIES_DIR / filename
     if not filepath.exists():
         raise HTTPException(status_code=404)
 
-    file_size = os.path.getsize(filepath)
     range_header = request.headers.get("range")
+    file_size = filepath.stat().st_size
+
     if range_header:
         byte1, byte2 = 0, None
-        m = range_header.replace("bytes=", "").split("-")
-        if len(m) == 2:
-            if m[0]: byte1 = int(m[0])
-            if m[1]: byte2 = int(m[1])
+        m = re.search(r'bytes=(\d+)-(\d*)', range_header)
+        if m:
+            g1, g2 = m.groups()
+            byte1 = int(g1)
+            if g2:
+                byte2 = int(g2)
+
         length = (byte2 or file_size - 1) - byte1 + 1
         with open(filepath, "rb") as f:
             f.seek(byte1)
@@ -61,7 +66,7 @@ def stream_movie(request: Request, filename: str):
         return StreamingResponse(data, status_code=206, headers=headers)
     else:
         return FileResponse(filepath, media_type="video/mp4")
-
+    
 # Get audio/subtitle tracks
 @app.get("/tracks/{filename}")
 def tracks(filename: str):

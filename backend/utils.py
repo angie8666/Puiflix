@@ -26,9 +26,17 @@ def sanitize_movie_name(filename: str) -> str:
     return name.strip()
 
 def fetch_poster(filename: str):
-    query_name = sanitize_movie_name(filename)
+    from pathlib import Path
+    import requests, os, re
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    TMDB_API_KEY = os.getenv("TMDB_API_KEY")
+
+    query_name = re.sub(r'\.[^.]+$', '', filename).replace('_',' ').strip()
     local_file = re.sub(r'\s+', '_', query_name) + ".jpg"
     local_path = POSTERS_DIR / local_file
+
     if local_path.exists():
         return f"/posters/{local_file}"
 
@@ -52,6 +60,7 @@ def fetch_poster(filename: str):
                     return f"/posters/{local_file}"
     except Exception as e:
         print("Poster fetch error:", e)
+
     return "/static/placeholder.jpg"
 
 def get_tracks(file_path: Path):

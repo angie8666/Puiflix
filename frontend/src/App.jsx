@@ -10,13 +10,15 @@ function App() {
   const [currentSubtitle, setCurrentSubtitle] = useState(0);
   const [currentAudio, setCurrentAudio] = useState("");
   const [search, setSearch] = useState("");
+  const [fullPlayer, setFullPlayer] = useState(true); // default full player
   const [suggestion, setSuggestion] = useState("");
-  const [isMiniPlayer, setIsMiniPlayer] = useState(false); // mini/full toggle
   const videoRef = useRef(null);
 
-  // Fetch movies
+  const BACKEND_URL = "/api"; // Nginx proxy to backend
+
+  // Fetch movies from backend
   useEffect(() => {
-    axios.get("/api/movies")
+    axios.get(`${BACKEND_URL}/movies`)
       .then(res => setMovies(res.data.movies))
       .catch(console.error);
   }, []);
@@ -24,7 +26,7 @@ function App() {
   // Fetch tracks for selected movie
   useEffect(() => {
     if (!selectedMovie) return;
-    axios.get(`/api/tracks/${selectedMovie.name}`)
+    axios.get(`${BACKEND_URL}/tracks/${selectedMovie.name}`)
       .then(res => {
         setSubtitleTracks(res.data.subtitles || []);
         setAudioTracks(res.data.audio || []);
@@ -43,8 +45,8 @@ function App() {
   const handleAudioChange = (idx) => {
     if (!selectedMovie || !videoRef.current) return;
     const url = idx === "" 
-      ? `/api/stream/${selectedMovie.name}`
-      : `/api/audio/${selectedMovie.name}/${idx}`;
+      ? `${BACKEND_URL}/stream/${selectedMovie.name}`
+      : `${BACKEND_URL}/audio/${selectedMovie.name}/${idx}`;
     const currentTime = videoRef.current.currentTime;
     videoRef.current.src = url;
     videoRef.current.currentTime = currentTime;
@@ -54,7 +56,7 @@ function App() {
 
   const handleSuggestionSubmit = () => {
     if (!suggestion.trim()) return;
-    axios.post("/api/suggest_movie", { movie_title: suggestion })
+    axios.post(`${BACKEND_URL}/suggest_movie`, { movie_title: suggestion })
       .then(() => {
         alert("Thanks for your suggestion!");
         setSuggestion("");
@@ -80,7 +82,6 @@ function App() {
         onChange={e => setSearch(e.target.value)}
       />
 
-      {/* Suggestion box */}
       <div className="suggestion-box">
         <input
           type="text"
@@ -91,7 +92,6 @@ function App() {
         <button onClick={handleSuggestionSubmit}>Send</button>
       </div>
 
-      {/* Movie Grid */}
       <div className="movie-grid">
         {filteredMovies.map((movie) => (
           <div
@@ -99,7 +99,10 @@ function App() {
             className="movie-card"
             onClick={() => setSelectedMovie(movie)}
           >
-            <img src={movie.poster} alt={movie.title} />
+            <img 
+              src={`${BACKEND_URL}/posters/${movie.name.replace(/\s+/g,'_')}.jpg`} 
+              alt={movie.title} 
+            />
             <div className="overlay">
               <span>⭐ {movie.rating || "N/A"}</span>
             </div>
@@ -108,51 +111,39 @@ function App() {
         ))}
       </div>
 
-      {/* Player section */}
       {selectedMovie && (
-        <div className={isMiniPlayer ? "mini-player" : "full-player"}>
+        <div className={`player-container ${fullPlayer ? "full" : "mini"}`}>
           <video
             ref={videoRef}
-            src={`/api/stream/${selectedMovie.name}`}
+            src={`${BACKEND_URL}/stream/${selectedMovie.name}`}
             controls
-            width={isMiniPlayer ? 400 : "100%"}
-            height={isMiniPlayer ? 225 : "auto"}
+            width={fullPlayer ? "800" : "400"}
           >
             {subtitleTracks.map((sub, idx) => (
               <track
                 key={sub.index}
                 label={sub.lang}
                 kind="subtitles"
-                src={`/api/subtitles/${selectedMovie.name}/${sub.index}`}
+                src={`${BACKEND_URL}/subtitles/${selectedMovie.name}/${sub.index}`}
                 default={idx === 0}
               />
             ))}
           </video>
 
           <div className="controls">
-            <select
-              value={currentSubtitle}
-              onChange={e => handleSubtitleChange(parseInt(e.target.value))}
-            >
+            <select value={currentSubtitle} onChange={e => handleSubtitleChange(parseInt(e.target.value))}>
               {subtitleTracks.map((sub, idx) => (
                 <option key={sub.index} value={idx}>{sub.lang}</option>
               ))}
             </select>
-
-            <select
-              value={currentAudio}
-              onChange={e => handleAudioChange(e.target.value)}
-            >
+            <select value={currentAudio} onChange={e => handleAudioChange(e.target.value)}>
               <option value="">Default</option>
               {audioTracks.map(a => (
                 <option key={a.index} value={a.index}>{a.lang}</option>
               ))}
             </select>
-
-            <button
-              onClick={() => setIsMiniPlayer(!isMiniPlayer)}
-            >
-              {isMiniPlayer ? "Full Player" : "Mini Player"}
+            <button onClick={() => setFullPlayer(!fullPlayer)}>
+              {fullPlayer ? "Mini Player" : "Full Player"}
             </button>
           </div>
         </div>
