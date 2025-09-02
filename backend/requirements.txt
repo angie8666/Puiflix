@@ -1,8 +1,8 @@
 fastapi
-uvicorn
-subliminal
-babelfish
+uvicorn[standard]
+python-multipart
 requests
 python-dotenv
-opencv-python
 ffmpeg-python
+subliminal
+babelfish

@@ -66,8 +66,8 @@ input[type="text"] {
   text-overflow: ellipsis;
 }
 
-/* Mini-player */
-.mini-player {
+/* Mini and full player */
+.mini-player, .full-player {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -77,13 +77,23 @@ input[type="text"] {
   box-shadow: 0 0 15px rgba(0,0,0,0.7);
   z-index: 100;
 }
-.mini-player video { width: 400px; border-radius: 8px; margin-bottom: 5px; }
+
+.full-player {
+  position: relative;
+  margin: 20px auto;
+  width: 90%;
+  max-width: 1200px;
+  bottom: unset;
+  right: unset;
+}
 
 /* Controls dropdowns */
 .controls {
   margin-top: 5px;
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 select {
   padding: 4px 6px;
@@ -92,6 +102,14 @@ select {
   background: #333;
   color: #fff;
   outline: none;
+}
+button {
+  padding: 4px 10px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  background: #e50914;
+  color: #fff;
 }
 
 /* Suggestion box */

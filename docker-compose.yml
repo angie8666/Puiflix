@@ -7,7 +7,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
-      - /c/Users/Mauro/Downloads/movies:/app/movies:cached
+      - C:/Users/Mauro/Downloads/movies:/app/movies   # <-- maps host folder to container
     environment:
       - PYTHONUNBUFFERED=1
     env_file:
